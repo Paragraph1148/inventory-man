@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/api";
+import MemberTable from "../components/MemberTable";
 
 export default function Members() {
   const [members, setMembers] = useState([]);
@@ -12,14 +13,42 @@ export default function Members() {
 
   const navigate = useNavigate();
 
+  // ---------------------------
+  // Fetch members
+  // ---------------------------
   const fetchMembers = async () => {
-    const res = await api.get("/members", { params: filters });
-    setMembers(res.data);
+    try {
+      const res = await api.get("/members", { params: filters });
+      setMembers(res.data);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   useEffect(() => {
     fetchMembers();
   }, []);
+
+  // ---------------------------
+  // Delete handler
+  // ---------------------------
+  const handleDelete = async (id) => {
+    if (!confirm("Delete this member?")) return;
+
+    try {
+      await api.delete(`/members/${id}`);
+      fetchMembers(); // refresh list
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // ---------------------------
+  // Edit handler
+  // ---------------------------
+  const handleEdit = (id) => {
+    navigate(`/dashboard/members/${id}/edit`);
+  };
 
   return (
     <div className="p-6">
@@ -34,7 +63,7 @@ export default function Members() {
           + Add Member
         </button>
       </div>
-      <div className="bg-blue-500 text-white p-5">Tailwind Working</div>{" "}
+
       {/* FILTER BAR */}
       <div className="bg-white p-4 rounded shadow flex gap-3 items-center mb-4">
         <input
@@ -63,69 +92,13 @@ export default function Members() {
           Filter
         </button>
       </div>
-      {/* TABLE */}
-      <div className="bg-white rounded shadow overflow-x-auto">
-        <table className="w-full text-center border">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-2">S.No</th>
-              <th>Name</th>
-              <th>Contact</th>
-              <th>Email</th>
-              <th>Total</th>
-              <th>Left</th>
-              <th>Right</th>
-              <th>Date</th>
-              <th>Action</th>
-              <th>Code</th>
-            </tr>
-          </thead>
 
-          <tbody>
-            {members.map((m, i) => (
-              <tr key={m.id} className="border-t">
-                <td>{i + 1}</td>
-
-                <td>
-                  {m.first_name} {m.last_name}
-                </td>
-
-                <td>{m.contact}</td>
-                <td>{m.email}</td>
-
-                <td>{m.total_subtree}</td>
-                <td>{m.total_left_leg}</td>
-                <td>{m.total_right_leg}</td>
-
-                <td>{m.referral_code}</td>
-
-                <td>{new Date(m.created_at).toLocaleDateString()}</td>
-
-                <td className="space-x-2">
-                  <button
-                    onClick={() => navigate(`/dashboard/members/${m.id}/edit`)}
-                    className="bg-yellow-400 px-2 py-1 rounded"
-                  >
-                    E
-                  </button>
-
-                  <button className="bg-red-500 text-white px-2 py-1 rounded">
-                    D
-                  </button>
-                </td>
-              </tr>
-            ))}
-
-            {members.length === 0 && (
-              <tr>
-                <td colSpan="9" className="p-4">
-                  No members found
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      {/* TABLE (Component) */}
+      <MemberTable
+        members={members}
+        onDelete={handleDelete}
+        onEdit={handleEdit}
+      />
     </div>
   );
 }

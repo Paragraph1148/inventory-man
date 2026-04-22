@@ -25,7 +25,7 @@ export const addMember = async (data) => {
       cityId,
       stateId,
       passwordHash,
-      referralCode, // ✅ correct name
+      referralCode,
       leg,
     } = data;
 
@@ -33,6 +33,7 @@ export const addMember = async (data) => {
     // 2️⃣ Resolve referrer (FIXED)
     // -------------------------------
     let referrerId = null;
+    let depth = 0;
 
     if (referralCode) {
       const [[ref]] = await conn.query(
@@ -45,6 +46,7 @@ export const addMember = async (data) => {
       }
 
       referrerId = ref.id;
+      depth = (ref.depth ?? 0) + 1;
 
       if (!leg) {
         throw new Error("Leg is required when referral code is used");
@@ -74,8 +76,8 @@ export const addMember = async (data) => {
     const [ins] = await conn.query(
       `INSERT INTO members
        (first_name, middle_name, last_name, email, contact, address,
-        city_id, state_id, password_hash, referrer_id, leg, referral_code)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        city_id, state_id, password_hash, referrer_id, leg, referral_code, depth)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         firstName,
         middleName,
@@ -88,7 +90,8 @@ export const addMember = async (data) => {
         passwordHash,
         referrerId,
         leg,
-        newCode, // ✅ correct
+        newCode,
+        depth,
       ],
     );
 
@@ -197,25 +200,29 @@ export const deleteMemberCascade = async (memberId) => {
     let curLeg = info.leg;
 
     while (parentId) {
-      const decLeft =
-        curLeg === "L" ? "total_left_leg = total_left_leg - ?," : "";
-      const decRight =
-        curLeg === "R" ? "total_right_leg = total_right_leg - ?," : "";
+      let sql = `UPDATE members SET total_subtree = total_subtree - ?`;
+      const params = [subtreeSize];
 
-      await conn.query(
-        `UPDATE members
-         SET total_subtree = total_subtree - ?,
-             ${decLeft}
-             ${decRight}
-             total_subtree = total_subtree - 0
-         WHERE id = ?`,
-        [subtreeSize, subtreeSize, subtreeSize, parentId],
-      );
+      if (curLeg === "L") {
+        sql += `, total_left_leg = total_left_leg - ?`;
+        params.push(subtreeSize);
+      }
+
+      if (curLeg === "R") {
+        sql += `, total_right_leg = total_right_leg - ?`;
+        params.push(subtreeSize);
+      }
+
+      sql += ` WHERE id = ?`;
+      params.push(parentId);
+
+      await conn.query(sql, params);
 
       const [[row]] = await conn.query(
         `SELECT referrer_id, leg FROM members WHERE id = ?`,
         [parentId],
       );
+
       parentId = row.referrer_id;
       curLeg = row.leg;
     }
@@ -352,7 +359,7 @@ export const moveMember = async (memberId, newParentId, newLeg) => {
     // -------------------------------------------------
 
     const [[parentRow]] = newParentId
-      ? await conn.query(`SELECT depth FROM members WHERE id = ? FOR UPDATE`, [
+      ? await conn.query(`SELECT depth FROM members WHERE id = ?`, [
           newParentId,
         ])
       : [null];
