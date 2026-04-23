@@ -19,7 +19,8 @@ export default function EditOrder() {
   useEffect(() => {
     fetchData();
   }, []);
-
+  const selectedProduct = products.find((p) => p.id == form.productId);
+  const [error, setError] = useState("");
   const cleanDate = form.orderDate.includes("T")
     ? form.orderDate.split("T")[0]
     : form.orderDate;
@@ -47,10 +48,17 @@ export default function EditOrder() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    await api.patch(`/orders/${id}`, {
-      ...form,
-      orderDate: form.orderDate.split("T")[0],
-    });
+    try {
+      await api.patch(`/orders/${id}`, {
+        ...form,
+        quantity: Number(form.quantity),
+        orderDate: form.orderDate.split("T")[0],
+      });
+
+      navigate("/dashboard/orders");
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to update order");
+    }
   };
 
   return (
@@ -82,6 +90,12 @@ export default function EditOrder() {
           ))}
         </select>
 
+        {selectedProduct && (
+          <p className="text-sm text-gray-500">
+            Available: {selectedProduct.stock}
+          </p>
+        )}
+
         <input
           type="number"
           value={form.quantity}
@@ -95,6 +109,8 @@ export default function EditOrder() {
           onChange={(e) => setForm({ ...form, orderDate: e.target.value })}
           className="border p-2 w-full"
         />
+
+        {error && <p className="text-red-500">{error}</p>}
 
         <button className="bg-blue-500 text-white px-4 py-2 rounded">
           Save Changes

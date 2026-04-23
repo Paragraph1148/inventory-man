@@ -6,7 +6,18 @@ const router = express.Router();
 
 router.get("/", requireAdmin, async (req, res, next) => {
   try {
-    const [rows] = await pool.query("SELECT * FROM products ORDER BY name");
+    const [rows] = await pool.query(
+      `SELECT 
+         p.*,
+         p.stock - COALESCE(SUM(r.quantity), 0) AS available_stock
+       FROM products p
+       LEFT JOIN stock_reservations r 
+         ON r.product_id = p.id 
+         AND r.expires_at > NOW()
+       GROUP BY p.id
+       ORDER BY p.name`,
+    );
+
     res.json(rows);
   } catch (e) {
     next(e);
@@ -14,12 +25,17 @@ router.get("/", requireAdmin, async (req, res, next) => {
 });
 
 router.post("/", requireAdmin, async (req, res, next) => {
-  const { name, unit, hsnCode, description, taxPercent, mrp } = req.body;
+  const { name, unit, hsnCode, description, taxPercent, mrp, stock } = req.body;
+
+  if (stock < 0) {
+    return res.status(400).json({ error: "Stock cannot be negative" });
+  }
+
   try {
     const [r] = await pool.query(
-      `INSERT INTO products (name, unit, hsn_code, description, tax_percent, mrp)
-         VALUES (?,?,?,?,?,?)`,
-      [name, unit, hsnCode, description, taxPercent, mrp],
+      `INSERT INTO products (name, unit, stock, hsn_code, description, tax_percent, mrp)
+         VALUES (?,?,?,?,?,?,?)`,
+      [name, unit, stock, hsnCode, description, taxPercent, mrp],
     );
     res.status(201).json({ id: r.insertId });
   } catch (e) {

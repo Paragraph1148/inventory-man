@@ -11,6 +11,7 @@ import EditProduct from "./pages/EditProduct";
 import Orders from "./pages/Orders";
 import AddOrder from "./pages/AddOrder";
 import EditOrder from "./pages/EditOrder";
+import PreOrder from "./pages/PreOrder";
 
 // temporary pages
 const Home = () => <div>Welcome to Dashboard</div>;
@@ -32,6 +33,7 @@ export default function App() {
           <Route path="orders/:id/edit" element={<EditOrder />} />
           <Route path="orders" element={<Orders />} />
           <Route path="orders/add" element={<AddOrder />} />
+          <Route path="/dashboard/reserve" element={<PreOrder />} />
           <Route path="products/:id/edit" element={<EditProduct />} />
           <Route path="products" element={<Products />} />
           <Route path="products/add" element={<AddProduct />} />

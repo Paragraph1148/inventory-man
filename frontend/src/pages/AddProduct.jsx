@@ -12,6 +12,7 @@ export default function AddProduct() {
     description: "",
     taxPercent: "",
     mrp: "",
+    stock: "",
   });
 
   const [error, setError] = useState("");
@@ -32,6 +33,7 @@ export default function AddProduct() {
         ...form,
         taxPercent: Number(form.taxPercent),
         mrp: Number(form.mrp),
+        stock: Number(form.stock),
       });
 
       navigate("/dashboard/products");
@@ -57,6 +59,16 @@ export default function AddProduct() {
           name="unit"
           placeholder="Unit (pcs, kg, etc)"
           required
+          onChange={handleChange}
+          className="border p-2 w-full"
+        />
+
+        <input
+          name="stock"
+          placeholder="Stock"
+          type="number"
+          required
+          min="0"
           onChange={handleChange}
           className="border p-2 w-full"
         />

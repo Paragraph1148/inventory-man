@@ -40,15 +40,24 @@ export default function Orders() {
   return (
     <div>
       {/* Header */}
-      <div className="flex justify-between mb-4">
-        <h2 className="text-xl font-semibold">Orders</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">Products</h2>
 
-        <button
-          onClick={() => navigate("/dashboard/orders/add")}
-          className="bg-green-500 text-white px-4 py-2 rounded"
-        >
-          + Add Order
-        </button>
+        <div className="space-x-2">
+          <button
+            onClick={() => navigate("/dashboard/reserve")}
+            className="bg-purple-500 text-white px-4 py-2 rounded"
+          >
+            Reserve Stock
+          </button>
+
+          <button
+            onClick={() => navigate("/dashboard/orders/add")}
+            className="bg-green-500 text-white px-4 py-2 rounded"
+          >
+            + Add Order
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -109,6 +118,7 @@ export default function Orders() {
               <th>Product</th>
               <th>Qty</th>
               <th>Date</th>
+              <th>Action</th>
             </tr>
           </thead>
 

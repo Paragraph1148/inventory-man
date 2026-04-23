@@ -30,11 +30,23 @@ export default function AddOrder() {
     setProducts(res.data);
   };
 
+  const selectedProduct = products.find((p) => p.id == form.productId);
+  const [error, setError] = useState("");
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
 
-    await api.post("/orders", form);
-    navigate("/dashboard/orders");
+    try {
+      await api.post("/orders", {
+        ...form,
+        quantity: Number(form.quantity), // good practice
+      });
+
+      navigate("/dashboard/orders");
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to create order");
+    }
   };
 
   return (
@@ -72,6 +84,7 @@ export default function AddOrder() {
           type="number"
           placeholder="Quantity"
           required
+          max={selectedProduct?.available_stock || undefined}
           onChange={(e) => setForm({ ...form, quantity: e.target.value })}
           className="border p-2 w-full"
         />
@@ -82,8 +95,25 @@ export default function AddOrder() {
           onChange={(e) => setForm({ ...form, orderDate: e.target.value })}
           className="border p-2 w-full"
         />
+        {selectedProduct && (
+          <p className="text-sm text-gray-500">
+            Available: {selectedProduct.available_stock}
+          </p>
+        )}
+        {error && <p className="text-red-500">{error}</p>}
 
-        <button className="bg-blue-500 text-white px-4 py-2 rounded">
+        <button
+          disabled={
+            selectedProduct &&
+            Number(form.quantity) > selectedProduct.available_stock
+          }
+          className={`px-4 py-2 rounded ${
+            selectedProduct &&
+            Number(form.quantity) > selectedProduct.available_stock
+              ? "bg-gray-400"
+              : "bg-blue-500 text-white"
+          }`}
+        >
           Add Order
         </button>
       </form>
