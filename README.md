@@ -154,6 +154,46 @@ A reservation mechanism is implemented to handle temporary stock allocation:
 - Conflict resolution through aggregate availability calculation
 - Prevention of race conditions during high contention
 
+### 5.3 Temporary Stock Reservation Mechanism
+
+To address contention during high-demand scenarios, the system implements a **time-bound stock reservation layer**, conceptually similar to seat-locking mechanisms used in ticketing platforms.
+
+Instead of directly deducting stock at request time, the system introduces an intermediate **reservation state**, ensuring that:
+
+- Reserved units are temporarily excluded from global availability
+- Concurrent users cannot oversubscribe limited inventory
+- Reservations automatically expire after a fixed interval (e.g., 5 minutes)
+
+Availability is computed dynamically as:
+
+```sql id="b1r9sk"
+available = total_stock − active_reservations + user_reservation
+```
+
+This design ensures:
+
+- **Fair allocation under contention**
+- **Isolation of user-specific reservations**
+- **Prevention of race conditions without immediate stock mutation**
+
+The reservation is stored using an _upsert strategy_ (insert or update), allowing users to modify their reservation within the validity window without creating duplicate entries.
+
+### Payment Integration (Extension)
+
+The reservation layer is designed to support integration with a payment workflow:
+
+1. User reserves stock (temporary hold)
+2. Payment is initiated within reservation window
+3. On successful payment:
+   - Reservation is converted into a confirmed order
+   - Stock is permanently deducted
+
+4. On failure or timeout:
+   - Reservation expires automatically
+   - Stock becomes available again
+
+This separation between **reservation and commitment** enables safe interaction with external payment systems while preserving consistency.
+
 ---
 
 ## 6. Hierarchical Referral System
